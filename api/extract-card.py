@@ -3,7 +3,6 @@ import re
 import base64
 import urllib.request
 import urllib.parse
-import cgi
 from io import BytesIO
 from http.server import BaseHTTPRequestHandler
 
