@@ -74,136 +74,139 @@ export const ProcessScreen: React.FC<ProcessScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <FlatList
-        data={cards}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <>
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.title}>Process Cards</Text>
-              <Text style={styles.subtitle}>AI OCR Vision Data Extraction</Text>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Process Cards</Text>
+          <Text style={styles.subtitle}>AI OCR Vision Data Extraction</Text>
+        </View>
+
+        {/* Progress Dashboard Card */}
+        <View style={styles.progressCard}>
+          <View style={styles.progressHeaderRow}>
+            <Text style={styles.progressLabel}>
+              {isProcessingQueue ? 'Processing Cards...' : 'Queue Overview'}
+            </Text>
+            <Text style={styles.counterText}>
+              {isProcessingQueue
+                ? `${currentStep} / ${totalToProcess}`
+                : pendingCards.length > 0
+                ? `${pendingCards.length} Pending`
+                : `${unextractedCards.length} Needs Extraction`}
+            </Text>
+          </View>
+
+          {/* Progress Bar */}
+          <View style={styles.progressBarBg}>
+            <View style={[styles.progressBarFill, { width: `${isProcessingQueue ? progressPercent : 0}%` }]} />
+          </View>
+
+          {/* Active Status Indicator */}
+          {isProcessingQueue ? (
+            <View style={styles.activeStatusRow}>
+              <ActivityIndicator size="small" color="#1A73E8" style={{ marginRight: 8 }} />
+              <Text style={styles.activeStatusText}>
+                Extracting Card #{String(queueProgress.currentCardNumber || 0).padStart(3, '0')}
+              </Text>
             </View>
+          ) : (
+            <Text style={styles.idleStatusText}>
+              {pendingCards.length > 0
+                ? `${pendingCards.length} card(s) waiting for AI extraction.`
+                : unextractedCards.length > 0
+                ? `${unextractedCards.length} unextracted card(s) ready for AI re-processing.`
+                : 'All scanned cards processed!'}
+            </Text>
+          )}
 
-            {/* Progress Dashboard Card */}
-            <View style={styles.progressCard}>
-              <View style={styles.progressHeaderRow}>
-                <Text style={styles.progressLabel}>
-                  {isProcessingQueue ? 'Processing Cards...' : 'Queue Overview'}
-                </Text>
-                <Text style={styles.counterText}>
-                  {isProcessingQueue
-                    ? `${currentStep} / ${totalToProcess}`
-                    : pendingCards.length > 0
-                    ? `${pendingCards.length} Pending`
-                    : `${unextractedCards.length} Needs Extraction`}
-                </Text>
-              </View>
-
-              {/* Progress Bar */}
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: `${isProcessingQueue ? progressPercent : 0}%` }]} />
-              </View>
-
-              {/* Active Status Indicator */}
-              {isProcessingQueue ? (
-                <View style={styles.activeStatusRow}>
-                  <ActivityIndicator size="small" color="#1A73E8" style={{ marginRight: 8 }} />
-                  <Text style={styles.activeStatusText}>
-                    Extracting Card #{String(queueProgress.currentCardNumber || 0).padStart(3, '0')}
-                  </Text>
-                </View>
-              ) : (
-                <Text style={styles.idleStatusText}>
-                  {pendingCards.length > 0
-                    ? `${pendingCards.length} card(s) waiting for AI extraction.`
-                    : unextractedCards.length > 0
-                    ? `${unextractedCards.length} unextracted card(s) ready for AI re-processing.`
-                    : 'All scanned cards processed!'}
-                </Text>
-              )}
-
-              {/* Action Trigger Buttons */}
-              <View style={styles.buttonRow}>
-                {isProcessingQueue ? (
-                  <TouchableOpacity
-                    style={[styles.btn, styles.cancelBtn]}
-                    onPress={cancelQueueProcessing}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="stop-circle" size={18} color="#D93025" style={{ marginRight: 6 }} />
-                    <Text style={styles.cancelBtnText}>Stop Queue</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={[styles.btn, styles.startBtn, cards.length === 0 && styles.disabledBtn]}
-                    onPress={handleProcessAll}
-                    disabled={cards.length === 0}
-                    activeOpacity={0.88}
-                  >
-                    <Ionicons name="play" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-                    <Text style={styles.startBtnText}>
-                      {pendingCards.length > 0
-                        ? `Process Pending (${pendingCards.length})`
-                        : unextractedCards.length > 0
-                        ? `Extract All (${unextractedCards.length})`
-                        : cards.length > 0
-                        ? 'Reprocess All Cards'
-                        : 'Queue Empty'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-
-            {/* Processing Queue List Section */}
-            <Text style={styles.sectionHeader}>Queue Status</Text>
-          </>
-        }
-        renderItem={({ item }) => {
-          const cardNum = `Card #${String(item.cardNumber).padStart(3, '0')}`;
-          let iconName = 'ellipse-outline';
-          let iconColor = '#80868B';
-
-          if (item.status === 'processing') {
-            iconName = 'hourglass-outline';
-            iconColor = '#1A73E8';
-          } else if (item.status === 'processed') {
-            iconName = 'checkmark-circle';
-            iconColor = '#137333';
-          } else if (item.status === 'needs_review') {
-            iconName = 'alert-circle';
-            iconColor = '#B06000';
-          }
-
-          return (
-            <View style={styles.queueItem}>
-              <Ionicons name={iconName as any} size={20} color={iconColor} style={{ marginRight: 12 }} />
+          {/* Action Trigger Buttons */}
+          <View style={styles.buttonRow}>
+            {isProcessingQueue ? (
               <TouchableOpacity
-                style={{ flex: 1 }}
-                onPress={() => navigation.navigate('CardDetail', { cardId: item.id })}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.queueCardNum}>{cardNum}</Text>
-                <Text style={styles.queueCardName} numberOfLines={1}>
-                  {item.fullName || (item.status === 'pending' ? 'Waiting for extraction...' : 'Unextracted')}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.reextractPillBtn}
-                onPress={() => handleSingleCardExtract(item.id, item.cardNumber)}
+                style={[styles.btn, styles.cancelBtn]}
+                onPress={cancelQueueProcessing}
                 activeOpacity={0.8}
               >
-                <Ionicons name="refresh-outline" size={14} color="#1A73E8" style={{ marginRight: 4 }} />
-                <Text style={styles.reextractPillText}>Extract</Text>
+                <Ionicons name="stop-circle" size={18} color="#D93025" style={{ marginRight: 6 }} />
+                <Text style={styles.cancelBtnText}>Stop Queue</Text>
               </TouchableOpacity>
-            </View>
-          );
-        }}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+            ) : (
+              <TouchableOpacity
+                style={[styles.btn, styles.startBtn, cards.length === 0 && styles.disabledBtn]}
+                onPress={handleProcessAll}
+                disabled={cards.length === 0}
+                activeOpacity={0.88}
+              >
+                <Ionicons name="play" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.startBtnText}>
+                  {pendingCards.length > 0
+                    ? `Process Pending (${pendingCards.length})`
+                    : unextractedCards.length > 0
+                    ? `Extract All (${unextractedCards.length})`
+                    : cards.length > 0
+                    ? 'Reprocess All Cards'
+                    : 'Queue Empty'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Processing Queue List Section */}
+        <Text style={styles.sectionHeader}>Queue Status</Text>
+
+        <FlatList
+          data={cards}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => {
+            const cardNum = `Card #${String(item.cardNumber).padStart(3, '0')}`;
+            let iconName = 'ellipse-outline';
+            let iconColor = '#80868B';
+            let statusText = 'Pending';
+
+            if (item.status === 'processing') {
+              iconName = 'hourglass-outline';
+              iconColor = '#1A73E8';
+              statusText = 'Extracting...';
+            } else if (item.status === 'processed') {
+              iconName = 'checkmark-circle';
+              iconColor = '#137333';
+              statusText = 'Complete';
+            } else if (item.status === 'needs_review') {
+              iconName = 'alert-circle';
+              iconColor = '#B06000';
+              statusText = 'Needs Extraction';
+            }
+
+            return (
+              <View style={styles.queueItem}>
+                <Ionicons name={iconName as any} size={20} color={iconColor} style={{ marginRight: 12 }} />
+                <TouchableOpacity
+                  style={{ flex: 1 }}
+                  onPress={() => navigation.navigate('CardDetail', { cardId: item.id })}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.queueCardNum}>{cardNum}</Text>
+                  <Text style={styles.queueCardName} numberOfLines={1}>
+                    {item.fullName || (item.status === 'pending' ? 'Waiting for extraction...' : 'Unextracted')}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.reextractPillBtn}
+                  onPress={() => handleSingleCardExtract(item.id, item.cardNumber)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="refresh-outline" size={14} color="#1A73E8" style={{ marginRight: 4 }} />
+                  <Text style={styles.reextractPillText}>Extract</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
     </SafeAreaView>
   );
 };
@@ -323,9 +326,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   listContent: {
-    padding: 16,
-    paddingBottom: 60,
-    flexGrow: 1,
+    paddingBottom: Platform.OS === 'web' ? 100 : 90,
   },
   queueItem: {
     flexDirection: 'row',

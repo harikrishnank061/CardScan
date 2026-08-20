@@ -262,8 +262,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 20,
-    paddingBottom: 60,
-    flexGrow: 1,
+    paddingBottom: Platform.OS === 'web' ? 100 : 80,
   },
   sectionHeader: {
     fontSize: 12,

@@ -29,17 +29,18 @@ function MainTabNavigator() {
           div[role="tab"] {
             height: 100% !important;
             min-height: 65px !important;
-            overflow: visible !important;
             padding-bottom: 8px !important;
             justify-content: center !important;
           }
           div[role="tablist"] {
             height: 75px !important;
             min-height: 75px !important;
-            overflow: visible !important;
           }
-          span, div {
-            overflow: visible !important;
+          /* Ensure smooth scrolling for web root without disabling scrollviews */
+          html, body {
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
           }
         `;
         document.head.appendChild(style);

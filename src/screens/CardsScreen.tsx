@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
+  ScrollView,
   StyleSheet,
   SafeAreaView,
   StatusBar,
@@ -77,64 +78,62 @@ export const CardsScreen: React.FC<CardsScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <FlatList
-        data={filteredCards}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <>
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.title}>Scanned Cards</Text>
-              <TouchableOpacity style={styles.scanBtn} onPress={() => navigation.navigate('Scan')} activeOpacity={0.8}>
-                <Ionicons name="camera" size={18} color="#FFFFFF" style={{ marginRight: 4 }} />
-                <Text style={styles.scanBtnText}>Scan</Text>
-              </TouchableOpacity>
-            </View>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Scanned Cards</Text>
+          <TouchableOpacity style={styles.scanBtn} onPress={() => navigation.navigate('Scan')} activeOpacity={0.8}>
+            <Ionicons name="camera" size={18} color="#FFFFFF" style={{ marginRight: 4 }} />
+            <Text style={styles.scanBtnText}>Scan</Text>
+          </TouchableOpacity>
+        </View>
 
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-              <Ionicons name="search-outline" size={20} color="#80868B" style={styles.searchIcon} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search by Name, Company, Phone, Email..."
-                placeholderTextColor="#9AA0A6"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                clearButtonMode="while-editing"
-              />
-              {searchQuery.length > 0 ? (
-                <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearSearchBtn}>
-                  <Ionicons name="close-circle" size={18} color="#80868B" />
-                </TouchableOpacity>
-              ) : null}
-            </View>
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search-outline" size={20} color="#80868B" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by Name, Company, Phone, Email..."
+            placeholderTextColor="#9AA0A6"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            clearButtonMode="while-editing"
+          />
+          {searchQuery.length > 0 ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearSearchBtn}>
+              <Ionicons name="close-circle" size={18} color="#80868B" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
 
-            {/* Filter Tabs */}
-            <View style={styles.tabsRow}>
-              {tabs.map((tab) => {
-                const isActive = activeTab === tab.key;
-                return (
-                  <TouchableOpacity
-                    key={tab.key}
-                    style={[styles.tabChip, isActive && styles.tabChipActive]}
-                    onPress={() => setActiveTab(tab.key)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-                      {tab.label}
+        {/* Filter Tabs */}
+        <View style={styles.tabsRowContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsRow}>
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.tabChip, isActive && styles.tabChipActive]}
+                  onPress={() => setActiveTab(tab.key)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                    {tab.label}
+                  </Text>
+                  <View style={[styles.badgeCount, isActive && styles.badgeCountActive]}>
+                    <Text style={[styles.badgeCountText, isActive && styles.badgeCountTextActive]}>
+                      {tab.count}
                     </Text>
-                    <View style={[styles.badgeCount, isActive && styles.badgeCountActive]}>
-                      <Text style={[styles.badgeCountText, isActive && styles.badgeCountTextActive]}>
-                        {tab.count}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </>
-        }
-        ListEmptyComponent={
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Cards List */}
+        {filteredCards.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="card-outline" size={64} color="#DADCE0" />
             <Text style={styles.emptyTitle}>No Cards Found</Text>
@@ -150,17 +149,22 @@ export const CardsScreen: React.FC<CardsScreenProps> = ({ navigation }) => {
               <Text style={styles.emptyActionText}>Scan First Card</Text>
             </TouchableOpacity>
           </View>
-        }
-        renderItem={({ item }) => (
-          <CardItem
-            card={item}
-            onPress={() => navigation.navigate('CardDetail', { cardId: item.id })}
-            onDelete={() => handleDeleteCard(item)}
+        ) : (
+          <FlatList
+            data={filteredCards}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <CardItem
+                card={item}
+                onPress={() => navigation.navigate('CardDetail', { cardId: item.id })}
+                onDelete={() => handleDeleteCard(item)}
+              />
+            )}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
           />
         )}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      </View>
     </SafeAreaView>
   );
 };
@@ -222,18 +226,22 @@ const styles = StyleSheet.create({
   clearSearchBtn: {
     padding: 4,
   },
+  tabsRowContainer: {
+    marginBottom: 14,
+  },
   tabsRow: {
     flexDirection: 'row',
-    marginBottom: 14,
+    alignItems: 'center',
+    paddingRight: 10,
   },
   tabChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 16,
-    marginRight: 6,
+    marginRight: 8,
     borderWidth: 1,
     borderColor: '#E8EAED',
   },
@@ -268,9 +276,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   listContent: {
-    padding: 16,
-    paddingBottom: 60,
-    flexGrow: 1,
+    paddingBottom: Platform.OS === 'web' ? 100 : 90,
   },
   emptyContainer: {
     flex: 1,
