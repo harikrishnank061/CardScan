@@ -39,3 +39,13 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Build outputs & binaries
+*.apk
+*.aab
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
