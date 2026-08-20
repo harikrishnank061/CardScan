@@ -62,7 +62,7 @@ export const ProcessScreen: React.FC<ProcessScreenProps> = ({ navigation }) => {
         } else {
           Alert.alert(
             'Check Backend Connection',
-            'Could not extract text. Ensure backend URL in Settings is set to https://happen-expanded-grade-postcard.trycloudflare.com and Python backend is running.'
+            'Could not extract text. Ensure backend URL in Settings is set to https://card-scan-flame.vercel.app.'
           );
         }
       }

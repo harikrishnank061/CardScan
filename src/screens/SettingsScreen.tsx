@@ -27,7 +27,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
 
   useEffect(() => {
     AsyncStorage.getItem('@cardscan_backend_url').then((val) => {
-      if (val) setBackendUrl(val);
+      if (val && !val.includes('trycloudflare') && !val.includes('loca.lt')) {
+        setBackendUrl(val.trim());
+      } else {
+        setBackendUrl('https://card-scan-flame.vercel.app');
+        AsyncStorage.setItem('@cardscan_backend_url', 'https://card-scan-flame.vercel.app');
+      }
     });
   }, []);
 

@@ -117,7 +117,7 @@ export const cardExtractionService = {
     // Check user saved custom URL from AsyncStorage
     try {
       const savedUrl = await AsyncStorage.getItem('@cardscan_backend_url');
-      if (savedUrl && savedUrl.trim().length > 0) {
+      if (savedUrl && savedUrl.trim().length > 0 && !savedUrl.includes('trycloudflare') && !savedUrl.includes('loca.lt')) {
         candidates.push(savedUrl.trim());
       }
     } catch {}
