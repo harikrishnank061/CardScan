@@ -164,6 +164,23 @@ def extract_image_bytes(body: bytes) -> bytes:
     return body
 
 class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        res = json.dumps({
+            "service": "CardScan AI/OCR Extraction API",
+            "status": "online",
+            "version": "1.0.0",
+            "endpoint": "POST /api/extract-card",
+            "message": "Send a POST request with front_image to extract visiting card details."
+        }).encode('utf-8')
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, bypass-tunnel-reminder')
+        self.send_header('Content-Length', str(len(res)))
+        self.end_headers()
+        self.wfile.write(res)
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
