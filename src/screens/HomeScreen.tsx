@@ -166,11 +166,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
-    shadowColor: '#1A73E8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 12px rgba(26, 115, 232, 0.3)',
+      },
+      default: {
+        shadowColor: '#1A73E8',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 4,
+      },
+    }),
   },
   primaryCtaIconContainer: {
     width: 52,

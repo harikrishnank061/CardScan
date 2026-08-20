@@ -144,7 +144,7 @@ export const cardExtractionService = {
   },
 
   /**
-   * Call Python FastAPI backend service running at /extract-card
+   * Call Python FastAPI backend service running at /extract-card or /api/extract-card
    */
   async _callPythonBackendAPI(
     frontImageUri: string,
@@ -153,14 +153,46 @@ export const cardExtractionService = {
     const formData = new FormData();
 
     if (Platform.OS === 'web') {
-      const frontRes = await fetch(frontImageUri);
-      const frontBlob = await frontRes.blob();
-      formData.append('front_image', frontBlob, 'front.jpg');
+      try {
+        if (frontImageUri.startsWith('data:')) {
+          const parts = frontImageUri.split(',');
+          const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+          const bstr = atob(parts[1]);
+          let n = bstr.length;
+          const u8arr = new Uint8Array(n);
+          while (n--) u8arr[n] = bstr.charCodeAt(n);
+          formData.append('front_image', new Blob([u8arr], { type: mime }), 'front.jpg');
+        } else {
+          const frontRes = await fetch(frontImageUri);
+          if (frontRes.ok) {
+            const frontBlob = await frontRes.blob();
+            formData.append('front_image', frontBlob, 'front.jpg');
+          }
+        }
+      } catch (e) {
+        console.warn('Could not read front image blob:', e);
+      }
 
       if (backImageUri) {
-        const backRes = await fetch(backImageUri);
-        const backBlob = await backRes.blob();
-        formData.append('back_image', backBlob, 'back.jpg');
+        try {
+          if (backImageUri.startsWith('data:')) {
+            const parts = backImageUri.split(',');
+            const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+            const bstr = atob(parts[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) u8arr[n] = bstr.charCodeAt(n);
+            formData.append('back_image', new Blob([u8arr], { type: mime }), 'back.jpg');
+          } else {
+            const backRes = await fetch(backImageUri);
+            if (backRes.ok) {
+              const backBlob = await backRes.blob();
+              formData.append('back_image', backBlob, 'back.jpg');
+            }
+          }
+        } catch (e) {
+          console.warn('Could not read back image blob:', e);
+        }
       }
     } else {
       formData.append('front_image', {
@@ -182,47 +214,56 @@ export const cardExtractionService = {
     let lastError: any = null;
 
     for (const baseUrl of candidateUrls) {
-      try {
-        const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-        const response = await fetch(`${cleanBase}/extract-card`, {
-          method: 'POST',
-          headers: {
-            'bypass-tunnel-reminder': 'true',
-          },
-          body: formData,
-        });
+      const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      
+      const endpointsToTry = cleanBase.endsWith('/extract-card')
+        ? [cleanBase]
+        : cleanBase.endsWith('/api')
+        ? [`${cleanBase}/extract-card`]
+        : [`${cleanBase}/api/extract-card`, `${cleanBase}/extract-card`];
 
-        if (response.ok) {
-          const data = await response.json();
-          return {
-            fullName: data.fullName || '',
-            designation: data.designation || '',
-            department: data.department || '',
-            companyName: data.companyName || '',
-            companyType: data.companyType || '',
-            phoneNumbers: data.phoneNumbers || [],
-            emailAddresses: data.emailAddresses || [],
-            websites: data.websites || [],
-            address: data.address || '',
-            city: data.city || '',
-            state: data.state || '',
-            country: data.country || 'India',
-            pincode: data.pincode || '',
-            gstin: data.gstin || '',
-            socialLinks: data.socialLinks || [],
-            services: data.services || [],
-            notes: data.notes || '',
-            confidence: data.confidence || {
-              fullName: 'high',
-              companyName: 'high',
-              phoneNumbers: 'high',
-              emailAddresses: 'high',
-              address: 'medium',
+      for (const endpoint of endpointsToTry) {
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'bypass-tunnel-reminder': 'true',
             },
-          };
+            body: formData,
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            return {
+              fullName: data.fullName || data.full_name || '',
+              designation: data.designation || '',
+              department: data.department || '',
+              companyName: data.companyName || data.company_name || '',
+              companyType: data.companyType || data.company_type || '',
+              phoneNumbers: data.phoneNumbers || data.phone_numbers || [],
+              emailAddresses: data.emailAddresses || data.email_addresses || [],
+              websites: data.websites || [],
+              address: data.address || '',
+              city: data.city || '',
+              state: data.state || '',
+              country: data.country || 'India',
+              pincode: data.pincode || '',
+              gstin: data.gstin || '',
+              socialLinks: data.socialLinks || data.social_links || [],
+              services: data.services || [],
+              notes: data.notes || '',
+              confidence: data.confidence || {
+                fullName: (data.fullName || data.full_name) ? 'high' : 'low',
+                companyName: (data.companyName || data.company_name) ? 'high' : 'low',
+                phoneNumbers: (data.phoneNumbers || data.phone_numbers)?.length > 0 ? 'high' : 'low',
+                emailAddresses: (data.emailAddresses || data.email_addresses)?.length > 0 ? 'high' : 'low',
+                address: data.address ? 'medium' : 'low',
+              },
+            };
+          }
+        } catch (err) {
+          lastError = err;
         }
-      } catch (err) {
-        lastError = err;
       }
     }
 

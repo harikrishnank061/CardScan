@@ -104,18 +104,33 @@ def parse_card_lines(lines):
             address_parts.append(clean_text(line))
     address = ", ".join(address_parts)
 
+    confidence = {
+        "fullName": "high" if full_name else "low",
+        "companyName": "high" if company_name else "low",
+        "phoneNumbers": "high" if phones else "low",
+        "emailAddresses": "high" if emails else "low",
+        "address": "medium" if address else "low"
+    }
+
     return {
+        "fullName": full_name,
         "full_name": full_name,
+        "companyName": company_name,
         "company_name": company_name,
+        "companyType": company_type,
         "company_type": company_type,
         "designation": designation,
+        "phoneNumbers": phones,
         "phone_numbers": phones,
+        "emailAddresses": emails,
         "email_addresses": emails,
         "websites": websites,
+        "socialLinks": [],
         "social_links": [],
         "gstin": gstin,
         "address": address,
-        "raw_text": full_text
+        "raw_text": full_text,
+        "confidence": confidence
     }
 
 class handler(BaseHTTPRequestHandler):
