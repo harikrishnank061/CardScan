@@ -134,6 +134,29 @@ def parse_card_lines(lines):
         "confidence": confidence
     }
 
+def extract_image_bytes(body: bytes) -> bytes:
+    if not body:
+        return b""
+    # Extract binary payload from multipart/form-data if headers exist
+    if b"Content-Disposition" in body and (b"filename=" in body or b"name=" in body):
+        header_end = body.find(b"\r\n\r\n")
+        if header_end != -1:
+            img_data = body[header_end + 4:]
+            boundary_start = img_data.rfind(b"\r\n--")
+            if boundary_start != -1:
+                img_data = img_data[:boundary_start]
+            return img_data
+        
+        header_end_alt = body.find(b"\n\n")
+        if header_end_alt != -1:
+            img_data = body[header_end_alt + 2:]
+            boundary_start = img_data.rfind(b"\n--")
+            if boundary_start != -1:
+                img_data = img_data[:boundary_start]
+            return img_data
+            
+    return body
+
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(200)
@@ -147,8 +170,11 @@ class handler(BaseHTTPRequestHandler):
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length)
 
-            # Convert body to base64 data string for OCR.Space API
-            base64_img = "data:image/jpeg;base64," + base64.b64encode(body).decode('utf-8')
+            # Strip multipart boundary headers to get pure image binary
+            clean_image_bytes = extract_image_bytes(body)
+
+            # Convert to base64 data URI for OCR.Space
+            base64_img = "data:image/jpeg;base64," + base64.b64encode(clean_image_bytes).decode('utf-8')
             
             post_params = urllib.parse.urlencode({
                 'apikey': 'helloworld',

@@ -147,61 +147,69 @@ export const cardExtractionService = {
   ): Promise<ExtractionResult> {
     const formData = new FormData();
 
-    if (Platform.OS === 'web') {
+    try {
+      if (frontImageUri.startsWith('data:')) {
+        const parts = frontImageUri.split(',');
+        const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+        const bstr = atob(parts[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) u8arr[n] = bstr.charCodeAt(n);
+        formData.append('front_image', new Blob([u8arr], { type: mime }), 'front.jpg');
+      } else {
+        const frontRes = await fetch(frontImageUri);
+        if (frontRes.ok) {
+          const frontBlob = await frontRes.blob();
+          formData.append('front_image', frontBlob, 'front.jpg');
+        } else if (Platform.OS !== 'web') {
+          formData.append('front_image', {
+            uri: frontImageUri,
+            name: 'front.jpg',
+            type: 'image/jpeg',
+          } as any);
+        }
+      }
+    } catch (e) {
+      if (Platform.OS !== 'web') {
+        formData.append('front_image', {
+          uri: frontImageUri,
+          name: 'front.jpg',
+          type: 'image/jpeg',
+        } as any);
+      }
+    }
+
+    if (backImageUri) {
       try {
-        if (frontImageUri.startsWith('data:')) {
-          const parts = frontImageUri.split(',');
+        if (backImageUri.startsWith('data:')) {
+          const parts = backImageUri.split(',');
           const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
           const bstr = atob(parts[1]);
           let n = bstr.length;
           const u8arr = new Uint8Array(n);
           while (n--) u8arr[n] = bstr.charCodeAt(n);
-          formData.append('front_image', new Blob([u8arr], { type: mime }), 'front.jpg');
+          formData.append('back_image', new Blob([u8arr], { type: mime }), 'back.jpg');
         } else {
-          const frontRes = await fetch(frontImageUri);
-          if (frontRes.ok) {
-            const frontBlob = await frontRes.blob();
-            formData.append('front_image', frontBlob, 'front.jpg');
+          const backRes = await fetch(backImageUri);
+          if (backRes.ok) {
+            const backBlob = await backRes.blob();
+            formData.append('back_image', backBlob, 'back.jpg');
+          } else if (Platform.OS !== 'web') {
+            formData.append('back_image', {
+              uri: backImageUri,
+              name: 'back.jpg',
+              type: 'image/jpeg',
+            } as any);
           }
         }
       } catch (e) {
-        console.warn('Could not read front image blob:', e);
-      }
-
-      if (backImageUri) {
-        try {
-          if (backImageUri.startsWith('data:')) {
-            const parts = backImageUri.split(',');
-            const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
-            const bstr = atob(parts[1]);
-            let n = bstr.length;
-            const u8arr = new Uint8Array(n);
-            while (n--) u8arr[n] = bstr.charCodeAt(n);
-            formData.append('back_image', new Blob([u8arr], { type: mime }), 'back.jpg');
-          } else {
-            const backRes = await fetch(backImageUri);
-            if (backRes.ok) {
-              const backBlob = await backRes.blob();
-              formData.append('back_image', backBlob, 'back.jpg');
-            }
-          }
-        } catch (e) {
-          console.warn('Could not read back image blob:', e);
+        if (Platform.OS !== 'web') {
+          formData.append('back_image', {
+            uri: backImageUri,
+            name: 'back.jpg',
+            type: 'image/jpeg',
+          } as any);
         }
-      }
-    } else {
-      formData.append('front_image', {
-        uri: frontImageUri,
-        name: 'front.jpg',
-        type: 'image/jpeg',
-      } as any);
-
-      if (backImageUri) {
-        formData.append('back_image', {
-          uri: backImageUri,
-          name: 'back.jpg',
-          type: 'image/jpeg',
-        } as any);
       }
     }
 
