@@ -45,16 +45,35 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
     setTestingConnection(true);
     try {
       const cleanUrl = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
-      const res = await fetch(`${cleanUrl}/docs`, { method: 'GET' });
+      const endpointsToTry = [
+        cleanUrl.endsWith('/api') ? `${cleanUrl}/extract-card` : `${cleanUrl}/api/extract-card`,
+        cleanUrl.endsWith('/extract-card') ? cleanUrl : `${cleanUrl}/extract-card`,
+        `${cleanUrl}/docs`,
+      ];
+
+      let success = false;
+      let lastStatus = 404;
+
+      for (const ep of endpointsToTry) {
+        try {
+          const res = await fetch(ep, { method: 'OPTIONS' });
+          if (res.ok || res.status === 200 || res.status === 204 || res.status === 405) {
+            success = true;
+            break;
+          }
+          lastStatus = res.status;
+        } catch {}
+      }
+
       setTestingConnection(false);
-      if (res.ok || res.status === 200) {
-        Alert.alert('Connection Success 🎉', `Successfully connected to Python FastAPI Backend at ${backendUrl}`);
+      if (success) {
+        Alert.alert('Connection Success 🎉', `Successfully connected to Python Backend at ${backendUrl}`);
       } else {
-        Alert.alert('Connection Failed', `Received HTTP ${res.status} response from ${backendUrl}`);
+        Alert.alert('Connection Failed', `Received HTTP ${lastStatus} response from ${backendUrl}`);
       }
     } catch (err: any) {
       setTestingConnection(false);
-      Alert.alert('Connection Failed', `Could not connect to ${backendUrl}. Ensure PC and Phone are on the same Wi-Fi network and python backend is running.`);
+      Alert.alert('Connection Failed', `Could not connect to ${backendUrl}. Check internet / backend status.`);
     }
   };
 
