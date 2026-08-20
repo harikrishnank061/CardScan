@@ -112,13 +112,6 @@ export const cardExtractionService = {
 
     // Vercel Serverless Function live URL
     candidates.push('https://card-scan-flame.vercel.app');
-    candidates.push('/api');
-    candidates.push('https://muscle-funky-molecules-source.trycloudflare.com');
-    candidates.push('https://duties-shareware-recordings-practitioners.trycloudflare.com');
-    candidates.push('https://reducing-previews-steal-pentium.trycloudflare.com');
-    candidates.push('https://subsequent-recordings-particle-image.trycloudflare.com');
-    candidates.push('https://reach-adapters-pillow-winter.trycloudflare.com');
-    candidates.push('https://cardscan-ai-backend.loca.lt');
 
     // Check user saved custom URL from AsyncStorage
     try {

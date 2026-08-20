@@ -262,6 +262,8 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 20,
+    paddingBottom: 60,
+    flexGrow: 1,
   },
   sectionHeader: {
     fontSize: 12,

@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCardContext } from '../context/CardContext';
@@ -62,7 +63,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Export Data</Text>
@@ -134,7 +135,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({ navigation }) => {
             </>
           )}
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -145,8 +146,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
   },
   container: {
-    flex: 1,
     padding: 20,
+    paddingBottom: 60,
+    flexGrow: 1,
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 20) + 10 : 20,
   },
   header: {

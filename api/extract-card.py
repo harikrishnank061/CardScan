@@ -1,8 +1,8 @@
 import json
 import re
+import base64
 import urllib.request
 import urllib.parse
-import cgi
 from io import BytesIO
 from http.server import BaseHTTPRequestHandler
 
@@ -132,18 +132,53 @@ class handler(BaseHTTPRequestHandler):
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length)
 
-            # Use Free OCR API (ocr.space) for serverless execution
-            url = "https://api.ocr.space/parse/image"
-            req = urllib.request.Request(url, data=body)
-            req.add_header('apikey', 'helloworld')  # Free public API key
-            req.add_header('Content-Type', content_type)
-            
-            with urllib.request.urlopen(req) as resp:
-                result_data = json.loads(resp.read().decode('utf-8'))
-                
+            b64_str = ""
+            if content_type.startswith('application/json'):
+                data = json.loads(body.decode('utf-8'))
+                raw_b64 = data.get('front_image', '') or data.get('image', '')
+                if raw_b64.startswith('data:'):
+                    b64_str = raw_b64
+                else:
+                    b64_str = f"data:image/jpeg;base64,{raw_b64}"
+            else:
+                img_bytes = b""
+                if b"\r\n\r\n" in body:
+                    parts = body.split(b"\r\n\r\n")
+                    for p in parts[1:]:
+                        if b"--" in p:
+                            sub_content = p.split(b"\r\n--")[0]
+                            if len(sub_content) > 100:
+                                img_bytes = sub_content
+                                break
+                        elif len(p) > 100:
+                            img_bytes = p
+                            break
+                if not img_bytes:
+                    img_bytes = body
+
+                encoded = base64.b64encode(img_bytes).decode('utf-8')
+                b64_str = f"data:image/jpeg;base64,{encoded}"
+
+            payload = urllib.parse.urlencode({
+                'apikey': 'helloworld',
+                'base64Image': b64_str,
+                'language': 'eng',
+                'isOverlayRequired': 'false',
+                'detectOrientation': 'true',
+                'scale': 'true'
+            }).encode('utf-8')
+
+            req = urllib.request.Request("https://api.ocr.space/parse/image", data=payload)
+            req.add_header('Content-Type', 'application/x-www-form-urlencoded')
+
             parsed_text = ""
-            if "ParsedResults" in result_data and len(result_data["ParsedResults"]) > 0:
-                parsed_text = result_data["ParsedResults"][0].get("ParsedText", "")
+            try:
+                with urllib.request.urlopen(req, timeout=12) as resp:
+                    result_data = json.loads(resp.read().decode('utf-8'))
+                    if "ParsedResults" in result_data and len(result_data["ParsedResults"]) > 0:
+                        parsed_text = result_data["ParsedResults"][0].get("ParsedText", "")
+            except Exception:
+                parsed_text = ""
 
             lines = [l.strip() for l in parsed_text.splitlines() if l.strip()]
             extracted = parse_card_lines(lines)
@@ -154,7 +189,7 @@ class handler(BaseHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Content-Length', str(len(response_bytes)))
             self.end_headers()
-            self.write(response_bytes)
+            self.wfile.write(response_bytes)
 
         except Exception as e:
             err_res = json.dumps({"error": str(e)}).encode('utf-8')
@@ -163,3 +198,4 @@ class handler(BaseHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(err_res)
+

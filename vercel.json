@@ -15,6 +15,10 @@
   ],
   "routes": [
     {
+      "src": "/extract-card",
+      "dest": "/api/extract-card.py"
+    },
+    {
       "src": "/api/extract-card",
       "dest": "/api/extract-card.py"
     },
