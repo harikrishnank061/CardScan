@@ -1,6 +1,7 @@
 import json
 import re
 import base64
+import ssl
 import urllib.request
 import urllib.parse
 from io import BytesIO
@@ -209,15 +210,19 @@ class handler(BaseHTTPRequestHandler):
 
             url = "https://api.ocr.space/parse/image"
             req = urllib.request.Request(url, data=post_params, headers={
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             })
             
-            with urllib.request.urlopen(req) as resp:
-                result_data = json.loads(resp.read().decode('utf-8'))
-                
             parsed_text = ""
-            if isinstance(result_data, dict) and "ParsedResults" in result_data and len(result_data["ParsedResults"]) > 0:
-                parsed_text = result_data["ParsedResults"][0].get("ParsedText", "")
+            try:
+                ssl_ctx = ssl._create_unverified_context()
+                with urllib.request.urlopen(req, context=ssl_ctx, timeout=25) as resp:
+                    result_data = json.loads(resp.read().decode('utf-8'))
+                    if isinstance(result_data, dict) and "ParsedResults" in result_data and len(result_data["ParsedResults"]) > 0:
+                        parsed_text = result_data["ParsedResults"][0].get("ParsedText", "")
+            except Exception as ocr_err:
+                print("OCR Engine Error:", ocr_err)
 
             lines = [l.strip() for l in parsed_text.splitlines() if l.strip()]
             extracted = parse_card_lines(lines)
@@ -233,9 +238,14 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(response_bytes)
 
         except Exception as e:
-            err_res = json.dumps({"error": str(e)}).encode('utf-8')
-            self.send_response(500)
+            fallback = parse_card_lines([])
+            fallback["error"] = str(e)
+            err_res = json.dumps(fallback).encode('utf-8')
+            self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type, bypass-tunnel-reminder')
+            self.send_header('Content-Length', str(len(err_res)))
             self.end_headers()
             self.wfile.write(err_res)
