@@ -169,7 +169,7 @@ class handler(BaseHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Content-Length', str(len(response_bytes)))
             self.end_headers()
-            self.write(response_bytes)
+            self.wfile.write(response_bytes)
 
         except Exception as e:
             err_res = json.dumps({"error": str(e)}).encode('utf-8')
