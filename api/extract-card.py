@@ -194,11 +194,18 @@ class handler(BaseHTTPRequestHandler):
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length)
 
-            # Strip multipart boundary headers to get pure image binary
-            clean_image_bytes = extract_image_bytes(body)
+            base64_img = ""
+            # Check if JSON payload
+            try:
+                json_body = json.loads(body.decode('utf-8'))
+                if isinstance(json_body, dict):
+                    base64_img = json_body.get('front_image') or json_body.get('image') or json_body.get('front_image_base64') or json_body.get('url') or ""
+            except Exception:
+                pass
 
-            # Convert to base64 data URI for OCR.Space
-            base64_img = "data:image/jpeg;base64," + base64.b64encode(clean_image_bytes).decode('utf-8')
+            if not base64_img or not base64_img.startswith('data:'):
+                clean_image_bytes = extract_image_bytes(body)
+                base64_img = "data:image/jpeg;base64," + base64.b64encode(clean_image_bytes).decode('utf-8')
             
             post_params = urllib.parse.urlencode({
                 'apikey': 'helloworld',

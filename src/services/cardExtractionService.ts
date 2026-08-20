@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
 import { VisitingCard, VisitingCardConfidence } from '../types/card';
 
 export interface ExtractionResult {
@@ -145,72 +146,29 @@ export const cardExtractionService = {
     frontImageUri: string,
     backImageUri?: string
   ): Promise<ExtractionResult> {
-    const formData = new FormData();
-
+    // 1. Prepare Base64 data string for native mobile / web
+    let frontBase64 = '';
     try {
       if (frontImageUri.startsWith('data:')) {
-        const parts = frontImageUri.split(',');
-        const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
-        const bstr = atob(parts[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        while (n--) u8arr[n] = bstr.charCodeAt(n);
-        formData.append('front_image', new Blob([u8arr], { type: mime }), 'front.jpg');
+        frontBase64 = frontImageUri;
+      } else if (Platform.OS !== 'web' && (frontImageUri.startsWith('file://') || frontImageUri.startsWith('content://'))) {
+        const b64 = await FileSystem.readAsStringAsync(frontImageUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        frontBase64 = `data:image/jpeg;base64,${b64}`;
       } else {
-        const frontRes = await fetch(frontImageUri);
-        if (frontRes.ok) {
-          const frontBlob = await frontRes.blob();
-          formData.append('front_image', frontBlob, 'front.jpg');
-        } else if (Platform.OS !== 'web') {
-          formData.append('front_image', {
-            uri: frontImageUri,
-            name: 'front.jpg',
-            type: 'image/jpeg',
-          } as any);
+        const res = await fetch(frontImageUri);
+        if (res.ok) {
+          const blob = await res.blob();
+          frontBase64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
         }
       }
     } catch (e) {
-      if (Platform.OS !== 'web') {
-        formData.append('front_image', {
-          uri: frontImageUri,
-          name: 'front.jpg',
-          type: 'image/jpeg',
-        } as any);
-      }
-    }
-
-    if (backImageUri) {
-      try {
-        if (backImageUri.startsWith('data:')) {
-          const parts = backImageUri.split(',');
-          const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
-          const bstr = atob(parts[1]);
-          let n = bstr.length;
-          const u8arr = new Uint8Array(n);
-          while (n--) u8arr[n] = bstr.charCodeAt(n);
-          formData.append('back_image', new Blob([u8arr], { type: mime }), 'back.jpg');
-        } else {
-          const backRes = await fetch(backImageUri);
-          if (backRes.ok) {
-            const backBlob = await backRes.blob();
-            formData.append('back_image', backBlob, 'back.jpg');
-          } else if (Platform.OS !== 'web') {
-            formData.append('back_image', {
-              uri: backImageUri,
-              name: 'back.jpg',
-              type: 'image/jpeg',
-            } as any);
-          }
-        }
-      } catch (e) {
-        if (Platform.OS !== 'web') {
-          formData.append('back_image', {
-            uri: backImageUri,
-            name: 'back.jpg',
-            type: 'image/jpeg',
-          } as any);
-        }
-      }
+      console.warn('Could not convert front image to Base64:', e);
     }
 
     const candidateUrls = await this._getBackendCandidateUrls();
@@ -227,13 +185,34 @@ export const cardExtractionService = {
 
       for (const endpoint of endpointsToTry) {
         try {
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'bypass-tunnel-reminder': 'true',
-            },
-            body: formData,
-          });
+          let response: Response;
+          if (frontBase64) {
+            response = await fetch(endpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'bypass-tunnel-reminder': 'true',
+              },
+              body: JSON.stringify({
+                front_image: frontBase64,
+                url: frontImageUri.startsWith('http') ? frontImageUri : undefined,
+              }),
+            });
+          } else {
+            const formData = new FormData();
+            formData.append('front_image', {
+              uri: frontImageUri,
+              name: 'front.jpg',
+              type: 'image/jpeg',
+            } as any);
+            response = await fetch(endpoint, {
+              method: 'POST',
+              headers: {
+                'bypass-tunnel-reminder': 'true',
+              },
+              body: formData,
+            });
+          }
 
           if (response.ok) {
             const data = await response.json();
