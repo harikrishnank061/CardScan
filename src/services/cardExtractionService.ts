@@ -113,12 +113,6 @@ export const cardExtractionService = {
     // Vercel Serverless Function live URL
     candidates.push('https://card-scan-flame.vercel.app');
     candidates.push('/api');
-    candidates.push('https://muscle-funky-molecules-source.trycloudflare.com');
-    candidates.push('https://duties-shareware-recordings-practitioners.trycloudflare.com');
-    candidates.push('https://reducing-previews-steal-pentium.trycloudflare.com');
-    candidates.push('https://subsequent-recordings-particle-image.trycloudflare.com');
-    candidates.push('https://reach-adapters-pillow-winter.trycloudflare.com');
-    candidates.push('https://cardscan-ai-backend.loca.lt');
 
     // Check user saved custom URL from AsyncStorage
     try {
@@ -133,10 +127,11 @@ export const cardExtractionService = {
       candidates.push(process.env.EXPO_PUBLIC_BACKEND_URL);
     }
 
-    // Local Wi-Fi PC IP for mobile devices
-    candidates.push('http://192.168.68.56:8000');
-    candidates.push('http://192.168.137.1:8000');
-    candidates.push('http://10.0.2.2:8000');
+    // Local fallback for local development (Mobile/Desktop)
+    if (Platform.OS !== 'web') {
+      candidates.push('http://192.168.68.56:8000');
+      candidates.push('http://10.0.2.2:8000');
+    }
     candidates.push('http://localhost:8000');
 
     // Deduplicate

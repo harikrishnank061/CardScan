@@ -1,5 +1,6 @@
 import json
 import re
+import base64
 import urllib.request
 import urllib.parse
 import cgi
@@ -143,21 +144,30 @@ class handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
-            content_type = self.headers.get('Content-Type', '')
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length)
 
-            # Use Free OCR API (ocr.space) for serverless execution
+            # Convert body to base64 data string for OCR.Space API
+            base64_img = "data:image/jpeg;base64," + base64.b64encode(body).decode('utf-8')
+            
+            post_params = urllib.parse.urlencode({
+                'apikey': 'helloworld',
+                'base64Image': base64_img,
+                'isTable': 'true',
+                'scale': 'true',
+                'OCREngine': '2'
+            }).encode('utf-8')
+
             url = "https://api.ocr.space/parse/image"
-            req = urllib.request.Request(url, data=body)
-            req.add_header('apikey', 'helloworld')  # Free public API key
-            req.add_header('Content-Type', content_type)
+            req = urllib.request.Request(url, data=post_params, headers={
+                'Content-Type': 'application/x-www-form-urlencoded'
+            })
             
             with urllib.request.urlopen(req) as resp:
                 result_data = json.loads(resp.read().decode('utf-8'))
                 
             parsed_text = ""
-            if "ParsedResults" in result_data and len(result_data["ParsedResults"]) > 0:
+            if isinstance(result_data, dict) and "ParsedResults" in result_data and len(result_data["ParsedResults"]) > 0:
                 parsed_text = result_data["ParsedResults"][0].get("ParsedText", "")
 
             lines = [l.strip() for l in parsed_text.splitlines() if l.strip()]
@@ -167,6 +177,8 @@ class handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type, bypass-tunnel-reminder')
             self.send_header('Content-Length', str(len(response_bytes)))
             self.end_headers()
             self.wfile.write(response_bytes)
