@@ -29,7 +29,7 @@ INDIAN_CITIES = [
 ]
 
 PINCODE_REGEX = re.compile(r"\b[1-9][0-9]{5}\b")
-PHONE_REGEX = re.compile(r"(?:\+91[\s-]?)?[6-9]\d{9}\b")
+PHONE_REGEX = re.compile(r"(?:\+?91[\s.-]?)?\(?\d{2,5}\)?[\s.-]?\d{3,5}[\s.-]?\d{3,5}")
 EMAIL_REGEX = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 URL_REGEX = re.compile(r"(?:https?://)?(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:/[^\s]*)?")
 GSTIN_REGEX = re.compile(r"\b\d{2}[A-Z]{5}\d{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}\b")
@@ -44,7 +44,14 @@ def parse_card_lines(lines):
     emails = list(set(EMAIL_REGEX.findall(full_text)))
     
     # 2. Extract Phones
-    phones = list(set(PHONE_REGEX.findall(full_text)))
+    raw_phones = PHONE_REGEX.findall(full_text)
+    phones = []
+    for p in raw_phones:
+        digits = re.sub(r"\D", "", p)
+        if 8 <= len(digits) <= 13:
+            clean_p = p.strip()
+            if clean_p not in phones:
+                phones.append(clean_p)
     
     # 3. Extract Websites
     raw_urls = URL_REGEX.findall(full_text)

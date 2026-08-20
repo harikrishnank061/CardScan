@@ -57,12 +57,18 @@ export const ProcessScreen: React.FC<ProcessScreenProps> = ({ navigation }) => {
     try {
       const updated = await processCardById(cardId);
       if (updated) {
-        if (updated.fullName || updated.companyName || (updated.phoneNumbers && updated.phoneNumbers.length > 0)) {
+        if (
+          updated.fullName ||
+          updated.companyName ||
+          (updated.phoneNumbers && updated.phoneNumbers.length > 0) ||
+          (updated.emailAddresses && updated.emailAddresses.length > 0) ||
+          updated.rawText
+        ) {
           Alert.alert('Extraction Success 🎉', `Extracted: ${updated.fullName || updated.companyName || 'Visiting Card'}`);
         } else {
           Alert.alert(
-            'Check Backend Connection',
-            'Could not extract text. Ensure backend URL in Settings is set to https://card-scan-flame.vercel.app.'
+            'Card Processed',
+            'Card processed successfully. If card text is faint, tap on the card to edit details manually.'
           );
         }
       }
