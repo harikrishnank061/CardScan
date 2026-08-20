@@ -60,9 +60,10 @@ export const ProcessScreen: React.FC<ProcessScreenProps> = ({ navigation }) => {
         if (
           updated.fullName ||
           updated.companyName ||
+          updated.designation ||
+          updated.address ||
           (updated.phoneNumbers && updated.phoneNumbers.length > 0) ||
-          (updated.emailAddresses && updated.emailAddresses.length > 0) ||
-          updated.rawText
+          (updated.emailAddresses && updated.emailAddresses.length > 0)
         ) {
           Alert.alert('Extraction Success 🎉', `Extracted: ${updated.fullName || updated.companyName || 'Visiting Card'}`);
         } else {
