@@ -22,7 +22,7 @@ interface SettingsScreenProps {
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { settings, updateSettings, resetSampleData, clearAllData } = useCardContext();
-  const [backendUrl, setBackendUrl] = useState<string>('https://muscle-funky-molecules-source.trycloudflare.com');
+  const [backendUrl, setBackendUrl] = useState<string>('https://card-scan-flame.vercel.app');
   const [testingConnection, setTestingConnection] = useState<boolean>(false);
 
   useEffect(() => {

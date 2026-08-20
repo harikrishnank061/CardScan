@@ -110,7 +110,8 @@ export const cardExtractionService = {
   async _getBackendCandidateUrls(): Promise<string[]> {
     const candidates: string[] = [];
 
-    // Vercel Serverless Function relative URL
+    // Vercel Serverless Function live URL
+    candidates.push('https://card-scan-flame.vercel.app');
     candidates.push('/api');
     candidates.push('https://muscle-funky-molecules-source.trycloudflare.com');
     candidates.push('https://duties-shareware-recordings-practitioners.trycloudflare.com');
